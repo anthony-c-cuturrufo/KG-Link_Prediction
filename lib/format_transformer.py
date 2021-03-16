@@ -69,7 +69,7 @@ def load_data(dataset_name):
     test_fp = "notebooks/train/{name}_test.tsv".format(name=dataset_name)
     
     for d_part in ["train", "valid", "test"]:
-        fp = "notebooks/train/{name}_{dateset_part}.tsv".format(name=dataset_name, dataset_part=d_part)
+        fp = "notebooks/train/{name}_{dataset_part}.tsv".format(name=dataset_name, dataset_part=d_part)
         
         with open(train_fp, 'r') as read_obj:
             csv_reader = reader(read_obj, delimiter = "\t")
