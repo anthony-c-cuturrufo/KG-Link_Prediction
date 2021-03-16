@@ -1,6 +1,7 @@
 """
 code originally from https://github.com/dmlc/dgl/blob/master/examples/pytorch/rgcn/link_predict.py
 load_data seen in https://docs.dgl.ai/_modules/dgl/data/knowledge_graph.html
+Note: reimplemented dataset class as a dictionary for easy of computation
 """
 """
 Modeling Relational Data with Graph Convolutional Networks
