@@ -7,11 +7,11 @@ h1    h2    1          0
 h1    h3    0          1
 where 1 specifies (h,r,t)
 '''
-def transform_kg_csv_to_triplets(list_of_csvs, entities = [], relations = []):
+def transform_kg_csv_to_triplets(list_of_csvs, entities = [], relations = [], relation_sample_ratio=1):
     triplets = []
     valid_entity = lambda e : True if entities == [] else e in entities
     for file in list_of_csvs: 
-        df_file = pd.read_csv(file)
+        df_file = pd.read_csv(file).sample(frac = relation_sample_ratio)
         row = df_file.values.tolist()
         col_names = df_file.columns
         #if no specified relations then use all
