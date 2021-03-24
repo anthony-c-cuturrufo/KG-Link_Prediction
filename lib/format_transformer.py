@@ -73,10 +73,12 @@ def load_data(dataset_name):
         
         with open(train_fp, 'r') as read_obj:
             csv_reader = reader(read_obj, delimiter = "\t")
-            dataset[d_part] = list(csv_reader)
-    all_of_data = dataset["train"] + dataset["valid"] + dataset["test"]
+            dataset[d_part] = list(csv_reader) 
+            dataset[d_part] = np.array(dataset[d_part])
+    all_of_data = np.vstack((dataset["train"],dataset["test"],dataset["valid"]))
     df = pd.DataFrame(all_of_data, columns=["h","r","t"])
-    dataset["num_nodes"] = len(np.unique(df.h.values + df.t.values))
+    nodes = np.append(df.h.values, df.t.values)
+    dataset["num_nodes"] = len(np.unique(nodes))
     dataset["num_rels"] = len(np.unique(df.r.values))
     return dataset
     
