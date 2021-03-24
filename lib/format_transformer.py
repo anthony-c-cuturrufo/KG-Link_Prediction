@@ -3,6 +3,8 @@ import numpy as np
 from csv import reader
 import csv
 import pickle
+import argparse
+
 '''
 iterates through csvs and finds all unique nodes and relations and creates dictionary like:
 {
@@ -39,6 +41,8 @@ h1    h3    0          1
 where 1 specifies (h,r,t)
 '''
 def transform_kg_csv_to_triplets(list_of_csvs, entities = [], relations = [], relation_sample_ratio=1):
+    with open('kg_dict.pickle', 'rb') as handle:
+        kg_dict = pickle.load(handle)
     triplets = []
     valid_entity = lambda e : True if entities == [] else e in entities
     for file in list_of_csvs: 
@@ -50,7 +54,7 @@ def transform_kg_csv_to_triplets(list_of_csvs, entities = [], relations = [], re
         for r in row: 
             for i in range(2, len(r)):
                 if r[i] == 1 and col_names[i] in relations and valid_entity(r[0]): 
-                    triplets.append([r[0], col_names[i], r[1]])
+                    triplets.append([kg_dict[r[0]], kg_dict[col_names[i]], kg_dict[r[1]]])
     return triplets
 
 '''
@@ -111,12 +115,35 @@ def load_data(dataset_name):
     dataset["num_nodes"] = len(np.unique(nodes))
     dataset["num_rels"] = len(np.unique(df.r.values))
     return dataset
+
+def main(args):
+    dict_list_csv = ['data/v1_res/relation/DDires.csv','data/v1_res/relation/DGres.csv','data/v1_res/relation/DiGres.csv','data/v1_res/relation/GGres.csv']
+    drkg_file = 'data/v1_res/relation/DDires.csv'
+
+    if args.create_dict == 1:
+        dct = create_kg_dictionary(dict_list_csv)
+    triples = transform_kg_csv_to_triplets([drkg_file], relation_sample_ratio=args.sample_ratio)
+    print("partitioning dataset")
+    partition_dataset(triples, args.dataset, args.train_ratio, args.validation_ratio)
+
     
 if __name__ == "__main__":
-    import sys
+    parser = argparse.ArgumentParser(description='Format Transfomer')
+    parser.add_argument("--create-dict", type=int, default=0,
+            help="set to 1 to recreate kg_dict")
+    parser.add_argument("--sample-ratio", type=float, default=.05,
+            help="ratio of dataset to sample between 0 and 1")
+    parser.add_argument("--dataset", type=str, default="WANGKG",
+            help="string name of dataset")
+    parser.add_argument("--train-ratio", type=float, default=.9,
+            help="ratio of dataset for training")
+    parser.add_argument("--validation-ratio", type=float, default=.05,
+            help="ratio of dataset for validation, it will test on the rest")
     print("running main..")
-    dict_list_csv = ['data/v1_res/relation/DDires.csv']
-    dct = create_kg_dictionary(dict_list_csv)
+    args = parser.parse_args()
+    print(args)
+    main(args)
+    
     print("finished")
     
     
