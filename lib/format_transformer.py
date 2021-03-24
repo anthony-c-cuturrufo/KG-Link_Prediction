@@ -1,6 +1,8 @@
 import pandas as pd
 import numpy as np   
 from csv import reader
+import csv
+import pickle
 '''
 iterates through csvs and finds all unique nodes and relations and creates dictionary like:
 {
@@ -110,8 +112,12 @@ def load_data(dataset_name):
     dataset["num_rels"] = len(np.unique(df.r.values))
     return dataset
     
-    
-    
+if __name__ == "__main__":
+    import sys
+    print("running main..")
+    dict_list_csv = ['data/v1_res/relation/DDires.csv']
+    dct = create_kg_dictionary(dict_list_csv)
+    print("finished")
     
     
     
