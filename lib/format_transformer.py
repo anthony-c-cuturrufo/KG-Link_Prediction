@@ -76,7 +76,7 @@ def load_data(dataset_name):
             dataset[d_part] = list(csv_reader)
     all_of_data = dataset["train"] + dataset["valid"] + dataset["test"]
     df = pd.DataFrame(all_of_data, columns=["h","r","t"])
-    dataset["num_nodes"] = len(np.unique(df.h.values))
+    dataset["num_nodes"] = len(np.unique(df.h.values + df.t.values))
     dataset["num_rels"] = len(np.unique(df.r.values))
     return dataset
     
