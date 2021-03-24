@@ -2,6 +2,34 @@ import pandas as pd
 import numpy as np   
 from csv import reader
 '''
+iterates through csvs and finds all unique nodes and relations and creates dictionary like:
+{
+    'node1': 1
+    'node2' : 2
+    ...
+    'relation1' : 100
+    'relation2' : 101
+}
+and then saves to file [kg_dict.pickle]
+Precondition: assumes valid paths to csvs from the python root
+'''
+def create_kg_dictionary(list_of_csvs):
+    words = []
+    for file in list_of_csvs:
+        with open(file) as csvfile:
+            kgreader = csv.reader(csvfile, delimiter=',')
+            for i,row in enumerate(kgreader):
+                if i == 0: words = words + row[2:]
+                else:
+                    words += row[:2] 
+    unique_words = np.unique(np.array(words)).tolist()
+    kg_dict = {k: v for v, k in enumerate(unique_words)}
+    
+    with open('kg_dict.pickle', 'wb') as handle:
+        pickle.dump(kg_dict, handle, protocol=pickle.HIGHEST_PROTOCOL)
+    
+    return kg_dict
+'''
 takes list of csvs and returns triplets of [h,r,t]. Assumes csv if formatted like:
 Head  Tail  Relation1  Relation2 ...
 h1    h2    1          0
