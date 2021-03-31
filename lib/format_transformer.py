@@ -107,7 +107,7 @@ def load_data(dataset_name):
         
         with open(train_fp, 'r') as read_obj:
             csv_reader = reader(read_obj, delimiter = "\t")
-            dataset[d_part] = list(csv_reader) 
+            dataset[d_part] = [[int(x) for x in rec] for rec in csv.reader(read_obj, delimiter='\t')]
             dataset[d_part] = np.array(dataset[d_part])
     all_of_data = np.vstack((dataset["train"],dataset["test"],dataset["valid"]))
     df = pd.DataFrame(all_of_data, columns=["h","r","t"])
