@@ -19,20 +19,26 @@ Precondition: assumes valid paths to csvs from the python root
 '''
 def create_kg_dictionary(list_of_csvs):
     words = []
+    node_names = []
+    rel_names = []
     for file in list_of_csvs:
         with open(file) as csvfile:
             kgreader = csv.reader(csvfile, delimiter=',')
             for i,row in enumerate(kgreader):
-                if i == 0: words = words + row[2:]
+                if i == 0: rel_names = rel_names + row[2:]
                 else:
-                    words += row[:2] 
-    unique_words = np.unique(np.array(words)).tolist()
-    kg_dict = {k: v for v, k in enumerate(unique_words)}
+                    node_names += row[:2] 
+    unique_nodes = np.unique(np.array(node_names)).tolist()
+    unique_rels = np.unique(np.array(rel_names)).tolist()
+    nodes_dict = {k: v for v, k in enumerate(unique_nodes)}
+    rels_dict = {k: v for v, k in enumerate(unique_rels)}
     
-    with open('kg_dict.pickle', 'wb') as handle:
-        pickle.dump(kg_dict, handle, protocol=pickle.HIGHEST_PROTOCOL)
+    with open('nodes_dict.pickle', 'wb') as handle:
+        pickle.dump(nodes_dict, handle, protocol=pickle.HIGHEST_PROTOCOL)
+    with open('rels_dict.pickle', 'wb') as handle:
+        pickle.dump(rels_dict, handle, protocol=pickle.HIGHEST_PROTOCOL)
     
-    return kg_dict
+    return nodes_dict, rels_dict
 '''
 takes list of csvs and returns triplets of [h,r,t]. Assumes csv if formatted like:
 Head  Tail  Relation1  Relation2 ...
@@ -41,8 +47,11 @@ h1    h3    0          1
 where 1 specifies (h,r,t)
 '''
 def transform_kg_csv_to_triplets(list_of_csvs, entities = [], relations = [], relation_sample_ratio=1):
-    with open('kg_dict.pickle', 'rb') as handle:
-        kg_dict = pickle.load(handle)
+    with open('nodes_dict.pickle', 'rb') as handle:
+        nodes_dict = pickle.load(handle)
+    with open('rels_dict.pickle', 'rb') as handle:
+        rels_dict = pickle.load(handle)
+        
     triplets = []
     valid_entity = lambda e : True if entities == [] else e in entities
     for file in list_of_csvs: 
@@ -54,7 +63,7 @@ def transform_kg_csv_to_triplets(list_of_csvs, entities = [], relations = [], re
         for r in row: 
             for i in range(2, len(r)):
                 if r[i] == 1 and col_names[i] in relations and valid_entity(r[0]): 
-                    triplets.append([kg_dict[r[0]], kg_dict[col_names[i]], kg_dict[r[1]]])
+                    triplets.append([nodes_dict[r[0]], rels_dict[col_names[i]], nodes_dict[r[1]]])
     return triplets
 
 '''
@@ -121,7 +130,9 @@ def main(args):
     drkg_file = 'data/v1_res/relation/DDires.csv'
 
     if args.create_dict == 1:
-        dct = create_kg_dictionary(dict_list_csv)
+        print("creating dicts")
+        nodes_dct, rel_dct = create_kg_dictionary(dict_list_csv)
+        print("finished creating dicts")
     triples = transform_kg_csv_to_triplets([drkg_file], relation_sample_ratio=args.sample_ratio)
     print("partitioning dataset")
     partition_dataset(triples, args.dataset, args.train_ratio, args.validation_ratio)
