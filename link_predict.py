@@ -103,7 +103,7 @@ def main(args):
     valid_data = data["valid"]
     test_data = data["test"]
     num_rels = data["num_rels"]
-
+    
     # check cuda
     use_cuda = args.gpu >= 0 and torch.cuda.is_available()
     if use_cuda:
@@ -175,6 +175,7 @@ def main(args):
             g = g.to(args.gpu)
 
         t0 = time.time()
+        
         embed = model(g, node_id, edge_type, edge_norm)
         loss = model.get_loss(g, embed, data, labels)
         t1 = time.time()

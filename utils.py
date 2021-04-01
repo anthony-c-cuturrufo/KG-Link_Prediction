@@ -18,6 +18,7 @@ import dgl
 #
 #######################################################################
 
+
 def get_adj_and_degrees(num_nodes, triplets):
     """ Get adjacency list and degrees of the graph
     """
