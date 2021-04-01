@@ -114,7 +114,7 @@ def load_data(dataset_name):
     for d_part in ["train", "valid", "test"]:
         fp = "notebooks/train/{name}_{dataset_part}.tsv".format(name=dataset_name, dataset_part=d_part)
         
-        with open(train_fp, 'r') as read_obj:
+        with open(fp, 'r') as read_obj:
             csv_reader = reader(read_obj, delimiter = "\t")
             dataset[d_part] = [[int(x) for x in rec] for rec in csv.reader(read_obj, delimiter='\t')]
             dataset[d_part] = np.array(dataset[d_part])
@@ -127,6 +127,7 @@ def load_data(dataset_name):
 
 def main(args):
     dict_list_csv = ['data/v1_res/relation/DDires.csv','data/v1_res/relation/DGres.csv','data/v1_res/relation/DiGres.csv','data/v1_res/relation/GGres.csv']
+    dict_list_csv = ['data/v1_res/relation/DDires.csv']
     drkg_file = 'data/v1_res/relation/DDires.csv'
 
     if args.create_dict == 1:
