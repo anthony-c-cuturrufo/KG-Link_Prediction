@@ -4,6 +4,36 @@ from csv import reader
 import csv
 import pickle
 import argparse
+import os
+
+'''
+Creates and saves files nodes_dict and rels_dict from [triplets] which are dictionary mapping from
+node name to a unique id. [triplets] is structured like [[h1,r1,t1],...]
+'''
+def create_dicts_from_triplets(triplets):
+    print("creating nodes and relation vocabulary")
+    df = pd.DataFrame(triplets, columns=['h','r','t'])
+    unique_nodes = np.unique(np.concatenate((df.h.values,df.t.values)))
+    unique_rels = np.unique(df.r.values)
+    nodes_dict = {k: v for v, k in enumerate(unique_nodes)}
+    rels_dict = {k: v for v, k in enumerate(unique_rels)}
+
+    with open('nodes_dict.pickle', 'wb') as handle:
+        pickle.dump(nodes_dict, handle, protocol=pickle.HIGHEST_PROTOCOL)
+    with open('rels_dict.pickle', 'wb') as handle:
+        pickle.dump(rels_dict, handle, protocol=pickle.HIGHEST_PROTOCOL)
+        
+    print("finished creating nodes and relation vocabulary")
+    new_triplets = []
+    for t in triplets:
+        new_t = [0,0,0]
+        for i,x in enumerate(t):
+            if i == 1:
+                new_t[i] = rels_dict[x]
+            else:
+                new_t[i] = nodes_dict[x]
+        new_triplets.append(new_t)                             
+    return new_triplets
 
 '''
 iterates through csvs and finds all unique nodes and relations and creates dictionary like:
@@ -46,24 +76,33 @@ h1    h2    1          0
 h1    h3    0          1
 where 1 specifies (h,r,t)
 '''
-def transform_kg_csv_to_triplets(list_of_csvs, entities = [], relations = [], relation_sample_ratio=1):
-    with open('nodes_dict.pickle', 'rb') as handle:
-        nodes_dict = pickle.load(handle)
-    with open('rels_dict.pickle', 'rb') as handle:
-        rels_dict = pickle.load(handle)
+def transform_kg_csv_to_triplets(list_of_csvs, entities = [], relations = [], relation_sample_ratio=1, is_dict = False):
+    nodes_dict = {}
+    rels_dict = {}
+    if is_dict:
+        with open('nodes_dict.pickle', 'rb') as handle:
+            nodes_dict = pickle.load(handle)
+        with open('rels_dict.pickle', 'rb') as handle:
+            rels_dict = pickle.load(handle)
         
     triplets = []
     valid_entity = lambda e : True if entities == [] else e in entities
     for file in list_of_csvs: 
+        val_relations = relations
         df_file = pd.read_csv(file).sample(frac = relation_sample_ratio)
         row = df_file.values.tolist()
         col_names = df_file.columns
         #if no specified relations then use all
-        if relations == []: relations = col_names[2:]
+        if relations == []: val_relations = col_names[2:]
         for r in row: 
             for i in range(2, len(r)):
-                if r[i] == 1 and col_names[i] in relations and valid_entity(r[0]): 
-                    triplets.append([nodes_dict[r[0]], rels_dict[col_names[i]], nodes_dict[r[1]]])
+                if r[i] == 1 and col_names[i] in val_relations and valid_entity(r[0]):
+                    if is_dict:
+                        triplets.append([nodes_dict[r[0]], rels_dict[col_names[i]], nodes_dict[r[1]]])
+                    else:
+                        triplets.append([r[0], col_names[i], r[1]])
+    if not is_dict:
+        triplets = create_dicts_from_triplets(triplets)
     return triplets
 
 '''
@@ -126,23 +165,24 @@ def load_data(dataset_name):
     return dataset
 
 def main(args):
-    dict_list_csv = ['data/v1_res/relation/DDires.csv','data/v1_res/relation/DGres.csv','data/v1_res/relation/DiGres.csv','data/v1_res/relation/GGres.csv']
-    dict_list_csv = ['data/v1_res/relation/DDires.csv']
-    drkg_file = 'data/v1_res/relation/DDires.csv'
-
-    if args.create_dict == 1:
-        print("creating dicts")
-        nodes_dct, rel_dct = create_kg_dictionary(dict_list_csv)
-        print("finished creating dicts")
-    triples = transform_kg_csv_to_triplets([drkg_file], relation_sample_ratio=args.sample_ratio)
+    dir_files = [f for f in os.listdir(args.data_path) if not (f.startswith('.') or f in args.exclude_files)]
+    dir_files = [args.data_path + "/" + f for f in dir_files]
+    is_dict = args.create_dict == 0
+    val_relations = args.valid_relations if args.valid_relations != "" else []
+    triples = transform_kg_csv_to_triplets(dir_files, relations=val_relations, relation_sample_ratio=args.sample_ratio, is_dict=is_dict)
     print("partitioning dataset")
     partition_dataset(triples, args.dataset, args.train_ratio, args.validation_ratio)
-
     
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Format Transfomer')
-    parser.add_argument("--create-dict", type=int, default=0,
-            help="set to 1 to recreate kg_dict")
+    parser.add_argument("--data-path", type=str, default="data/v1_res/relation",
+            help="path to folder with knowledge graphs")
+    parser.add_argument('--exclude-files', nargs='*', type=str, default="",
+            help="list files you wish to exlude from training")
+    parser.add_argument('--valid-relations', nargs='*', type=str, default="",
+            help="list all the relations you want to train with, default is all of them")
+    parser.add_argument("--create-dict", type=int, default=1,
+            help="set to 0 if vocabulary has already been created")
     parser.add_argument("--sample-ratio", type=float, default=.05,
             help="ratio of dataset to sample between 0 and 1")
     parser.add_argument("--dataset", type=str, default="WANGKG",
