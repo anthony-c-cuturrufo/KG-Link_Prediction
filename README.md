@@ -8,3 +8,6 @@
 
 ## Link Prediction
   Run ```python link_prediction.py -d <dataset name from setup>```
+  
+## Demo
+  Check out ```demo.ipynb``` for a much more intuitive demonstration of the link prediction pipeline. 
