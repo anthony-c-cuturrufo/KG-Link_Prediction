@@ -16,6 +16,7 @@ dependencies:
     - tensorflow-estimator==1.13.0
     - torch==1.8.0
     - dgl==0.6.0.post1
+    - dglke==0.1.2
     - pandas==1.2.3
     
 prefix: /home/liyt/anaconda3/envs/liyt_py36_trec

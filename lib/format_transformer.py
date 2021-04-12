@@ -176,21 +176,21 @@ def main(args):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Format Transfomer')
     parser.add_argument("--data-path", type=str, default="data/v1_res/relation",
-            help="path to folder with knowledge graphs")
+            help="path to folder with knowledge graphs, default=data/v1_res/relation")
     parser.add_argument('--exclude-files', nargs='*', type=str, default="",
             help="list files you wish to exlude from training")
     parser.add_argument('--valid-relations', nargs='*', type=str, default="",
             help="list all the relations you want to train with, default is all of them")
     parser.add_argument("--create-dict", type=int, default=1,
-            help="set to 0 if vocabulary has already been created")
+            help="set to 0 if vocabulary has already been created, default is 1")
     parser.add_argument("--sample-ratio", type=float, default=.05,
-            help="ratio of dataset to sample between 0 and 1")
+            help="ratio of dataset to sample between 0 and 1, default is .05")
     parser.add_argument("--dataset", type=str, default="WANGKG",
             help="string name of dataset")
     parser.add_argument("--train-ratio", type=float, default=.9,
-            help="ratio of dataset for training")
+            help="ratio of dataset for training, default=.9")
     parser.add_argument("--validation-ratio", type=float, default=.05,
-            help="ratio of dataset for validation, it will test on the rest")
+            help="ratio of dataset for validation, it will test on the rest, default=.05")
     print("running main..")
     args = parser.parse_args()
     print(args)
