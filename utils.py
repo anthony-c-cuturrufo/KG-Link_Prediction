@@ -224,6 +224,30 @@ def calc_raw_mrr(embedding, w, test_triplets, hits=[], eval_bz=100):
             print("Hits (raw) @ {}: {:.6f}".format(hit, avg_count.item()))
     return mrr.item()
 
+# return MR (raw), and Hits @ (1, 3, 10) @Author: Anthony Cuturrufo 
+def calc_raw_mrr(embedding, w, test_triplets, hits=[], eval_bz=100):
+    with torch.no_grad():
+        s = test_triplets[:, 0]
+        r = test_triplets[:, 1]
+        o = test_triplets[:, 2]
+        test_size = test_triplets.shape[0]
+
+        # perturb subject
+        ranks_s = perturb_and_get_raw_rank(embedding, w, o, r, s, test_size, eval_bz)
+        # perturb object
+        ranks_o = perturb_and_get_raw_rank(embedding, w, s, r, o, test_size, eval_bz)
+
+        ranks = torch.cat([ranks_s, ranks_o])
+        ranks += 1 # change to 1-indexed
+
+        mrr = torch.mean(ranks.float())
+        print("MR (raw): {:.6f}".format(mrr.item()))
+
+        for hit in hits:
+            avg_count = torch.mean((ranks <= hit).float())
+            print("Hits (raw) @ {}: {:.6f}".format(hit, avg_count.item()))
+    return mrr.item()
+
 #######################################################################
 #
 # Utility functions for evaluations (filtered)
@@ -325,6 +349,32 @@ def calc_filtered_mrr(embedding, w, train_triplets, valid_triplets, test_triplet
             print("Hits (filtered) @ {}: {:.6f}".format(hit, avg_count.item()))
     return mrr.item()
 
+#calcs filtered mean rank. Author: Anthony Cuturrufo 
+def calc_filtered_mr(embedding, w, train_triplets, valid_triplets, test_triplets, hits=[]):
+    with torch.no_grad():
+        s = test_triplets[:, 0]
+        r = test_triplets[:, 1]
+        o = test_triplets[:, 2]
+        test_size = test_triplets.shape[0]
+
+        triplets_to_filter = torch.cat([train_triplets, valid_triplets, test_triplets]).tolist()
+        triplets_to_filter = {tuple(triplet) for triplet in triplets_to_filter}
+        print('Perturbing subject...')
+        ranks_s = perturb_s_and_get_filtered_rank(embedding, w, s, r, o, test_size, triplets_to_filter)
+        print('Perturbing object...')
+        ranks_o = perturb_o_and_get_filtered_rank(embedding, w, s, r, o, test_size, triplets_to_filter)
+
+        ranks = torch.cat([ranks_s, ranks_o])
+        ranks += 1 # change to 1-indexed
+
+        mrr = torch.mean(ranks.float())
+        print("MRR (filtered): {:.6f}".format(mrr.item()))
+
+        for hit in hits:
+            avg_count = torch.mean((ranks <= hit).float())
+            print("Hits (filtered) @ {}: {:.6f}".format(hit, avg_count.item()))
+    return mrr.item()
+
 #######################################################################
 #
 # Main evaluation function
@@ -336,6 +386,13 @@ def calc_mrr(embedding, w, train_triplets, valid_triplets, test_triplets, hits=[
         mrr = calc_filtered_mrr(embedding, w, train_triplets, valid_triplets, test_triplets, hits)
     else:
         mrr = calc_raw_mrr(embedding, w, test_triplets, hits, eval_bz)
+    return mrr
+
+def calc_mr(embedding, w, train_triplets, valid_triplets, test_triplets, hits=[], eval_bz=100, eval_p="filtered"):
+    if eval_p == "filtered":
+        mrr = calc_filtered_mr(embedding, w, train_triplets, valid_triplets, test_triplets, hits)
+    else:
+        mrr = calc_raw_mr(embedding, w, test_triplets, hits, eval_bz)
     return mrr
 
 
