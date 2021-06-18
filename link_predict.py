@@ -150,6 +150,7 @@ def main(args):
 
     epoch = 0
     best_mrr = 0
+    best_mr = 100 #new 
     while True:
         model.train()
         epoch += 1
@@ -186,9 +187,10 @@ def main(args):
 
         forward_time.append(t1 - t0)
         backward_time.append(t2 - t1)
-        print("Epoch {:04d} | Loss {:.4f} | Best MRR {:.4f} | Forward {:.4f}s | Backward {:.4f}s".
-              format(epoch, loss.item(), best_mrr, forward_time[-1], backward_time[-1]))
-
+#         print("Epoch {:04d} | Loss {:.4f} | Best MRR {:.4f} | Forward {:.4f}s | Backward {:.4f}s".
+#               format(epoch, loss.item(), best_mrr, forward_time[-1], backward_time[-1]))
+        print("Epoch {:04d} | Loss {:.4f} | Best MRR {:.4f} | Best MR {:.4f} | Forward {:.4f}s | Backward {:.4f}s".
+            format(epoch, loss.item(), best_mrr, best_mr, forward_time[-1], backward_time[-1]))
         optimizer.zero_grad()
 
         # validation
@@ -202,6 +204,12 @@ def main(args):
             mrr = utils.calc_mrr(embed, model.w_relation, torch.LongTensor(train_data),
                                  valid_data, test_data, hits=[1, 3, 10], eval_bz=args.eval_batch_size,
                                  eval_p=args.eval_protocol)
+            
+            mr = utils.calc_mr(embed, model.w_relation, torch.LongTensor(train_data),
+                                 valid_data, test_data, hits=[1, 3, 10], eval_bz=args.eval_batch_size,
+                                 eval_p=args.eval_protocol) #new
+            
+            best_mr = min(mr, best_mr)
             # save best model
             if mrr < best_mrr:
                 if epoch >= args.n_epochs:

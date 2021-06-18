@@ -164,14 +164,67 @@ def load_data(dataset_name):
     dataset["num_rels"] = len(np.unique(df.r.values))
     return dataset
 
+'''
+Read in three .tsv files [filenames] for training, validation, and testing and converts string node names into integers using an vocabulary index map. Returns the resulting embedded [triplets]. Files must be names ..._train for training set, ..._valid for validation set, ..._test for testing set
+'''
+def embed_partitioned_data(filenames, name):    
+    node_vocab = {}
+    relation_vocab = {}
+    
+    curr_node_index = 0
+    curr_relation_index = 0
+
+    for file in filenames: 
+        data_type = ""
+        triplets = []
+        df_file = pd.read_csv(file, header=None, delimiter='\t')
+        row = df_file.values.tolist()
+        for r in row:
+            trip = [0,0,0]
+            for i, element in enumerate(r):
+                if i == 1: #element is a relation 
+                    if element in relation_vocab:
+                        trip[i] = relation_vocab[element]
+                    else:
+                        relation_vocab[element] = curr_relation_index
+                        curr_relation_index += 1
+                        trip[i] = relation_vocab[element]
+                else: #element is a node  
+                    if element in node_vocab:
+                        trip[i] = node_vocab[element]
+                    else:
+                        node_vocab[element] = curr_node_index
+                        curr_node_index += 1
+                        trip[i] = node_vocab[element]
+            triplets.append(trip)
+        if "_train" in file:
+            data_type = "_train"
+        elif "_valid" in file:
+            data_type = "_valid"
+        elif "_test" in file:
+            data_type = "_test"
+        else:
+            raise ValueError("Filenames need to be specified with _train, _valid, and _test in respective filenames")
+            
+        new_filename = "notebooks/train/" + name + data_type + ".tsv"
+        if os.path.exists(new_filename):
+            raise ValueError("Files already exists. Only writes embedded files to files that do not currently exist. Try again with different --dataset argument")
+        with open(new_filename, "w") as f:
+            writer = csv.writer(f, delimiter='\t')
+            writer.writerows(triplets)
+    return triplets
+        
 def main(args):
     dir_files = [f for f in os.listdir(args.data_path) if not (f.startswith('.') or f in args.exclude_files)]
     dir_files = [args.data_path + "/" + f for f in dir_files]
-    is_dict = args.create_dict == 0
-    val_relations = args.valid_relations if args.valid_relations != "" else []
-    triples = transform_kg_csv_to_triplets(dir_files, relations=val_relations, relation_sample_ratio=args.sample_ratio, is_dict=is_dict)
-    print("partitioning dataset")
-    partition_dataset(triples, args.dataset, args.train_ratio, args.validation_ratio)
+    if args.already_partitioned == 1: 
+        embed_partitioned_data(dir_files, args.dataset) 
+    else: 
+        is_dict = args.create_dict == 0
+        val_relations = args.valid_relations if args.valid_relations != "" else []
+        triples = transform_kg_csv_to_triplets(dir_files, relations=val_relations, relation_sample_ratio=args.sample_ratio, is_dict=is_dict)
+        print("partitioning dataset")
+        partition_dataset(triples, args.dataset, args.train_ratio, args.validation_ratio)
     
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Format Transfomer')
@@ -191,6 +244,8 @@ if __name__ == "__main__":
             help="ratio of dataset for training, default=.9")
     parser.add_argument("--validation-ratio", type=float, default=.05,
             help="ratio of dataset for validation, it will test on the rest, default=.05")
+    parser.add_argument("--already-partitioned", type=int, default=0,
+            help="set to 1 if we are training on already partitioned dataset (train, validation, test)")
     print("running main..")
     args = parser.parse_args()
     print(args)
